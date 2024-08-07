@@ -1,4 +1,4 @@
-Maternal Healthcare Analysis and SDG Index Score Prediction
+#Maternal Healthcare Analysis and SDG Index Score Prediction
 Project Overview
 This project analyzes maternal healthcare indicators across different countries and their relationship with the Sustainable Development Goals (SDG) Index Score. Using multiple linear regression, we predict the SDG Index Score based on three key maternal healthcare indicators:
 

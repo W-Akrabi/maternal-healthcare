@@ -1,0 +1,178 @@
+---
+title: "maternal healthcare"
+author: "Waleed Akrabi"
+date: "2024-03-26"
+output:
+    pdf_document: default
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+library(tidyverse)
+library(dplyr) # For data manipulation
+library(ggplot2)
+```
+
+## R Markdown
+
+This is an R Markdown document. Markdown is a simple formatting syntax for authoring HTML, PDF, and MS Word documents. For more details on using R Markdown see <http://rmarkdown.rstudio.com>.
+
+When you click the **Knit** button a document will be generated that includes both content as well as the output of any embedded R code chunks within the document. You can embed an R code chunk like this:
+
+```{r}
+# load in country indicators
+country_indicators <- 
+  read_csv("country_indicators.csv") %>%
+  select(-...1) %>%  # remove first column
+  select(iso3, everything()) %>%  # reorder the columns to put iso3 as column 1
+  rename(country_code_iso3 = iso3)  # rename first column to country_code_iso3
+
+# preview data
+country_indicators
+```
+##Hear we clean and get data from country_indicators.csv to get the 3 main indicators we need for our model and pair them to their country codes
+```{r}
+data_maternal <- country_indicators %>%
+   rename(codes = country_code_iso3) %>%
+  mutate(
+    skilled_birth_attendant = 
+      (`sowc_maternal-and-newborn-health__delivery-care-2016-2021-r_skilled-birth-attendant`),
+    Service_coverage = (`sowc_maternal-and-newborn-health__universal-health-coverage-2019_service-coverage-sub-index-on-reproductive-maternal-newborn-and-child-health`), 
+    maternal_mortality = (`sowc_maternal-and-newborn-health__maternal-mortality-2020-c_maternal-mortality-ratio`),
+    ) %>%
+select(codes,skilled_birth_attendant, Service_coverage, maternal_mortality)
+
+data_maternal
+```
+##Below we add the SDG_index_score for each country as that is our dependent variable we need for our regression model (Y)
+```{r}
+SDG <- read_csv('sdr_fd5e4b5a.csv')%>%
+  rename(sdg_score = `2023 SDG Index Score`, codes = `Country Code ISO3`)%>%
+select(codes, sdg_score)
+sdg_indicators_score <- left_join(x = data_maternal, y = SDG, by = "codes")
+
+sdg_indicators_score
+```
+
+```{r}
+# load in country indicators
+country_codes <- 
+  read_csv("country_codes.csv")
+country_indicators
+```
+##we then get the data regions
+```{r}
+data_regions <- country_codes %>% 
+  rename (region = `Region Name_en (M49)`,
+          sub_region = `Intermediate Region Name_en (M49)`,
+          codes = `ISO-alpha3 Code (M49)`,
+          country = `Country or Area_en (M49)`) %>%
+  select(region, sub_region, codes, country)
+
+data_final_unwrangled <- inner_join(x = data_regions, y = sdg_indicators_score, by = "codes")
+
+```
+##here we have the final wrangled data that we will use for our method
+```{r}
+data_final_wrangled <- data_final_unwrangled %>%
+  filter(region == "Africa") %>%
+  filter(!is.na(skilled_birth_attendant)) %>%
+  filter(!is.na(Service_coverage)) %>%
+  filter(!is.na(maternal_mortality)) %>%
+  filter(!is.na(sdg_score)) %>%
+  distinct(.keep_all = TRUE) %>%
+  select(region, sub_region, country, skilled_birth_attendant, Service_coverage, maternal_mortality, sdg_score)
+
+glimpse(data_final_wrangled)
+```
+##Below we now implement a muliple linear regression model on our dependent and independent variables and get a summary
+```{r}
+# Define dependent variable (Y)
+Y <- data_final_wrangled$sdg_score
+
+# Define independent variables (X)
+X <- data_final_wrangled %>%
+  select(skilled_birth_attendant, Service_coverage, maternal_mortality)
+
+# Fit multiple linear regression model
+model <- lm(Y ~ ., data = X)
+
+summary(model)
+summary(model)$coefficients
+```
+
+## Vizualiation
+
+##First Data visualization is scatter plot with a fitted regression line for each independent variable:
+
+```{r}
+# Create a dataframe with the independent variables and their predicted values
+plot_data <- data.frame(
+  skilled_birth_attendant = data_final_wrangled$skilled_birth_attendant,
+  Service_coverage = data_final_wrangled$Service_coverage,
+  maternal_mortality = data_final_wrangled$maternal_mortality,
+  sdg_score_predicted = predict(model)
+)
+
+# Plot for skilled_birth_attendant vs. sdg_score with fitted line
+plot_skilled_birth_attendant <- ggplot(plot_data, aes(x = skilled_birth_attendant, y = sdg_score_predicted)) +
+  geom_point(aes(y = sdg_score_predicted), color = "blue") +
+  geom_smooth(method = "lm", se = FALSE, color = "red") +
+  labs(x = "Skilled Birth Attendant", y = "SDG Index Score Predicted", title = "Fitted Model with Skilled Birth Attendant")
+
+# Plot for Service_coverage vs. sdg_score with fitted line
+plot_Service_coverage <- ggplot(plot_data, aes(x = Service_coverage, y = sdg_score_predicted)) +
+  geom_point(aes(y = sdg_score_predicted), color = "blue") +
+  geom_smooth(method = "lm", se = FALSE, color = "red") +
+  labs(x = "Service Coverage", y = "SDG Index Score Predicted", title = "Fitted Model with Service Coverage")
+
+# Plot for maternal_mortality vs. sdg_score with fitted line
+plot_maternal_mortality <- ggplot(plot_data, aes(x = maternal_mortality, y = sdg_score_predicted)) +
+  geom_point(aes(y = sdg_score_predicted), color = "blue") +
+  geom_smooth(method = "lm", se = FALSE, color = "red") +
+  labs(x = "Maternal Mortality", y = "SDG Index Score Predicted", title = "Fitted Model with Maternal Mortality")
+plot_skilled_birth_attendant
+plot_Service_coverage
+plot_maternal_mortality
+```
+##Another visualization we used is a plot of the residuals versus the fitted values. This plot helps to assess the assumptions of homoscedasticity (constant variance of residuals) and linearity of the model
+```{r}
+# Obtain the residuals from the model
+residuals <- residuals(model)
+
+# Obtain the fitted values from the model
+fitted_values <- fitted(model)
+
+# Create a dataframe with residuals and fitted values
+residuals_df <- data.frame(residuals = residuals, fitted_values = fitted_values)
+
+# Plot residuals versus fitted values
+residuals_plot <- ggplot(residuals_df, aes(x = fitted_values, y = residuals)) +
+  geom_point() +
+  geom_hline(yintercept = 0, linetype = "dashed", color = "red") +
+  labs(x = "Fitted Values", y = "Residuals", title = "Residuals vs. Fitted Values Plot")
+
+# Display the plot
+print(residuals_plot)
+```
+##We can use a histogram to further see the amount of countries that are in each indacator and there corisponding Y value color coded
+```{r}
+# Create histogram for skilled_birth_attendant vs. sdg_score
+plot_skilled_birth_attendant <- ggplot(data_final_wrangled, aes(x = skilled_birth_attendant, fill = cut(sdg_score, breaks = 10))) +
+  geom_histogram(position = "dodge", bins = 10) +
+  labs(x = "Skilled Birth Attendant", y = "Count", title = "Histogram: Skilled Birth Attendant vs. SDG Index Score")
+
+# Create histogram for Service_coverage vs. sdg_score
+plot_Service_coverage <- ggplot(data_final_wrangled, aes(x = Service_coverage, fill = cut(sdg_score, breaks = 10))) +
+  geom_histogram(position = "dodge", bins = 10) +
+  labs(x = "Service Coverage", y = "Count", title = "Histogram: Service Coverage vs. SDG Index Score")
+
+# Create histogram for maternal_mortality vs. sdg_score
+plot_maternal_mortality <- ggplot(data_final_wrangled, aes(x = maternal_mortality, fill = cut(sdg_score, breaks = 10))) +
+  geom_histogram(position = "dodge", bins = 10) +
+  labs(x = "Maternal Mortality", y = "Count", title = "Histogram: Maternal Mortality vs. SDG Index Score")
+
+plot_skilled_birth_attendant
+plot_Service_coverage
+plot_maternal_mortality
+```

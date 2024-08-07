@@ -20,24 +20,24 @@ README.md: This file, providing an overview of the project and instructions on h
 -Load and clean the country_indicators.csv file, selecting relevant columns and renaming them for clarity.
 -Merge the maternal healthcare data with SDG Index Scores using the country codes as keys.
 
-## Multiple Linear Regression:
+2. Multiple Linear Regression:
 
 -A multiple linear regression model is fitted to predict the SDG Index Score using the selected maternal healthcare indicators as independent variables.
 -The regression model provides insights into how these indicators influence the SDG Index Score.
-Visualization:
+3. Visualization:
 
 -Scatter plots with fitted regression lines for each independent variable against the SDG Index Score.
 -Residuals vs. Fitted Values plot to assess model assumptions.
 -Histograms to visualize the distribution of each indicator against the SDG Index Score.
 
 ## How to Run the Project
--Ensure you have R and RStudio installed on your system.
--Install the required R packages:
+1. Ensure you have R and RStudio installed on your system.
+2. Install the required R packages:
 R
 Copy code
 'install.packages(c("tidyverse", "ggplot2"))'
--Open the analysis.Rmd file in RStudio.
--Click the Knit button to generate the HTML, PDF, or Word output of the analysis.
+3. Open the analysis.Rmd file in RStudio.
+4. Click the Knit button to generate the HTML, PDF, or Word output of the analysis.
 
 ## Project Output
 -Model Summary: Provides detailed coefficients, p-values, and R-squared values for the regression model.

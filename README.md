@@ -35,7 +35,7 @@ README.md: This file, providing an overview of the project and instructions on h
 2. Install the required R packages:
 R
 Copy code
-'install.packages(c("tidyverse", "ggplot2"))'
+`install.packages(c("tidyverse", "ggplot2"))`
 3. Open the analysis.Rmd file in RStudio.
 4. Click the Knit button to generate the HTML, PDF, or Word output of the analysis.
 

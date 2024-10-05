@@ -42,6 +42,7 @@ Copy code
 ## Project Output
 -Model Summary: Provides detailed coefficients, p-values, and R-squared values for the regression model.
 -Plots: Visualizations include scatter plots with regression lines, residual plots, and histograms showing the distribution of healthcare indicators against the SDG Index Score.
+[Some title here](Q3.pdf)
 
 ## License
 This project is open-source and available under the MIT License.
